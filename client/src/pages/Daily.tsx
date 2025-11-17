@@ -81,7 +81,7 @@ export default function Daily() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      <div className="flex items-center justify-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white">
         <div className="text-2xl">Loading today's song...</div>
       </div>
     );
@@ -89,14 +89,14 @@ export default function Daily() {
 
   if (!track) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      <div className="flex items-center justify-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white">
         <div className="text-2xl">Failed to load song. Please try again.</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-6">
+    <div className="flex flex-col items-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white p-6">
       {/* Header */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">🎵 Guessing Daily Song</h1>
