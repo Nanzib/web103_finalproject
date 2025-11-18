@@ -11,6 +11,7 @@ interface Player {
 interface LobbyState {
   clients: WebSocket[]; 
   players: Player[];    
+  currentTrackId?: string; // Store current track
 }
 
 const wss = new WebSocketServer({ port: 8080 });
@@ -25,13 +26,13 @@ wss.on("connection", (ws) => {
   let currentLobbyId: string | null = null;
   let currentPlayerId: string | null = null;
 
-  ws.on("message", (message) => {
+  ws.on("message", async (message) => { // Made this async
     try {
       const msg = JSON.parse(message.toString());
       console.log("Received:", msg);
 
       switch (msg.type) {
-        case "joinLobby": {
+        case "joinLobby": { // Added curly braces
           const { lobbyId, name, isHost } = msg.payload;
           currentLobbyId = lobbyId;
           
@@ -51,8 +52,6 @@ wss.on("connection", (ws) => {
             isHost: isHost 
           };
           
-          // We know lobbies[lobbyId] exists because we just created it if missing
-          // But to satisfy TS, we access it safely:
           const lobby = lobbies[lobbyId];
           if (lobby) {
             lobby.clients.push(ws);
@@ -65,16 +64,44 @@ wss.on("connection", (ws) => {
             });
           }
           break;
-        }
+        } // Closed curly braces
 
-        case "startGame": {
+        case "startGame": { // Added curly braces
             const { lobbyId } = msg.payload;
+            const lobby = lobbies[lobbyId];
+                
+            if (!lobby) break; // Use break instead of return inside a switch
+
+            // 1. Fetch a random track from the API server
+            let track;
+            try {
+              // Note: This fetch call goes from this WS server to your Express API server
+              const response = await fetch("http://localhost:8000/api/spotify/random-track");
+              if (!response.ok) {
+                throw new Error(`API server responded with ${response.status}`);
+              }
+              track = await response.json();
+
+              if (!track || !track.id) {
+                throw new Error("Invalid track data from API server");
+              }
+            } catch (err) {
+              console.error("Failed to fetch random track for lobby:", err);
+              // Optionally broadcast an error to the lobby
+              broadcastToLobby(lobbyId, { type: "error", payload: { message: "Failed to load song." } });
+              break; // Use break instead of return
+            }
+            
+            // 2. Store the track ID (optional, but good for state)
+            lobby.currentTrackId = track.id;
+
+            // 3. Broadcast the *specific track data* to all players
             broadcastToLobby(lobbyId, {
-                type: "gameStarted",
-                payload: {}
+                type: "startRound", // New message type
+                payload: { track } // Send the whole track object
             });
             break;
-        }
+        } // Closed curly braces
       }
     } catch (error) {
       console.error("Error parsing message:", error);

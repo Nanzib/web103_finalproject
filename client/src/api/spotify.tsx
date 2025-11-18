@@ -24,6 +24,12 @@ export async function fetchDailySong(): Promise<SpotifyTrack> {
     return await res.json();
 }
 
+export async function fetchRandomTrack(): Promise<SpotifyTrack> {
+    const res = await fetch(`http://localhost:8000/api/spotify/random-track`);
+    if (!res.ok) throw new Error(`Failed to fetch random track: ${res.status}`);
+    return await res.json();
+}
+
 export interface TrackSuggestion {
     id: string;
     name: string;
@@ -41,4 +47,3 @@ export async function searchTracks(query: string): Promise<TrackSuggestion[]> {
     const data = await res.json();
     return data.results || [];
 }
-

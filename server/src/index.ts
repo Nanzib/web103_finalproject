@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { getTrack, searchTracks } from '../services/spotify.js';
+import { getTrack, searchTracks,getRandomTrack } from '../services/spotify.js';
 import userRoutes from './routes/users.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 
@@ -66,7 +66,18 @@ app.get('/api/spotify/daily-song', async (req, res) => {
     });
   }
 });
-
+app.get('/api/spotify/random-track', async (req, res) => {
+  try {
+    const track = await getRandomTrack();
+    res.json(track);
+  } catch (error) {
+    console.error('Error fetching random track:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch random track',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 // callback route for Spotify OAuth if we need it later
 // spotify asked me to have a callback URL obligatory 
 app.get('/callback', (req, res) => {

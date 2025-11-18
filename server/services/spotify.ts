@@ -181,3 +181,62 @@ export async function searchTracks(query: string, limit: number = 5) {
         throw error;
     }
 }
+
+// Get a random track from Spotify
+export async function getRandomTrack() {
+    const token = await getSpotifyAccessToken();
+    if (!token) {
+        throw new Error("Unable to get Spotify access token");
+    }
+
+    //Generate a random search query.
+    const randomCharacter = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+    const randomQuery = `'%${randomCharacter}%'`; 
+
+    //Generate a random offset to get different results.
+    const randomOffset = Math.floor(Math.random() * 999);
+
+    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(randomQuery)}&type=track&market=US&limit=1&offset=${randomOffset}`;
+
+    try {
+        const response = await fetch(url, {
+            headers: { 
+                'Authorization': `Bearer ${token}` 
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Spotify search API error (random):", errorText);
+            throw new Error(`Spotify API error ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.tracks || data.tracks.items.length === 0) {
+            // Fallback: just search for the letter and get the first track
+            console.warn("Random search failed, falling back to simple search.");
+            const tracks = await searchTracks(randomCharacter, 1);
+            if (tracks.length === 0) {
+                // As a last resort, search for 'a'
+                const fallbackTracks = await searchTracks('a', 1);
+                if (fallbackTracks.length === 0) throw new Error("No random track found");
+                return getTrack(fallbackTracks[0].id);
+            }
+            return getTrack(tracks[0].id);
+        }
+
+        const track = data.tracks.items[0];
+
+        // The search result is partial. We need full details from getTrack
+        // to ensure our preview URL logic is applied.
+        return getTrack(track.id);
+
+    } catch (error) {
+        console.error("Error searching random track from Spotify", error);
+        // Fallback in case of any error
+        const fallbackTracks = await searchTracks('a', 1);
+        if (fallbackTracks.length === 0) throw new Error("No random track found");
+        return getTrack(fallbackTracks[0].id);
+    }
+}
