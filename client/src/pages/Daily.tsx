@@ -1,3 +1,5 @@
+// client/src/pages/Daily.tsx
+
 import { useEffect, useState, useRef } from "react";
 import { fetchDailySong, type TrackSuggestion } from "../api/spotify";
 import type { SpotifyTrack } from "../api/spotify";
@@ -18,6 +20,9 @@ export default function Daily() {
   const [won, setWon] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // NEW: State to manage the "Copied!" message on the share button
+  const [copied, setCopied] = useState(false);
 
   // Load daily song on mount
   useEffect(() => {
@@ -79,6 +84,45 @@ export default function Daily() {
     }
   };
 
+  // NEW: Function to generate the emoji grid for sharing
+  const generateShareGrid = () => {
+    if (!track) return "";
+    
+    // Create the Heardle-style 1-line grid
+    let grid = "";
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+      const guess = guesses[i];
+      if (guess && guess.correct) {
+        grid += "🟩";
+      } else if (guess && !guess.correct) {
+        grid += "🟥";
+      } else {
+        grid += "⬜️";
+      }
+    }
+
+    // Get a unique-ish ID for the day (last 5 chars of track ID)
+    const dailyId = track.id.slice(-5);
+    const tries = won ? guesses.length : "X";
+    
+    return `Beatdle #${dailyId} ${tries}/${MAX_ATTEMPTS}\n\n${grid}`;
+  };
+
+  // NEW: Function to copy the results to the clipboard
+  const handleShare = async () => {
+    const gridText = generateShareGrid();
+    try {
+      // Use the modern Clipboard API
+      await navigator.clipboard.writeText(gridText);
+      setCopied(true);
+      // Reset the "Copied!" message after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy results: ", err);
+      alert("Failed to copy results. You may need to grant clipboard permissions.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white">
@@ -120,8 +164,10 @@ export default function Daily() {
         className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl mb-6 transition ${
           isPlaying
             ? "bg-gray-600 cursor-not-allowed"
-            : gameOver
-            ? "bg-green-600 hover:bg-green-700"
+            : gameOver && won // Keep button green if won
+            ? "bg-green-600" 
+            : gameOver && !won // Keep button gray if lost
+            ? "bg-gray-600 cursor-not-allowed"
             : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
@@ -131,7 +177,9 @@ export default function Daily() {
       {/* Waveform visualization */}
       <div className="flex gap-1 mb-8 h-16 items-end">
         {[...Array(30)].map((_, i) => {
-          const isUnlocked = i < (SNIPPET_DURATIONS[currentAttempt] / 30) * 30;
+          // Adjust logic to correctly show the *current* snippet length, not the next one
+          const currentDuration = SNIPPET_DURATIONS[currentAttempt] || 0;
+          const isUnlocked = i < (currentDuration / 15) * 30; // 15s is max, 30 bars
           return (
             <div
               key={i}
@@ -178,7 +226,7 @@ export default function Daily() {
       </div>
 
       {/* Guess details */}
-      {guesses.length > 0 && (
+      {guesses.length > 0 && !gameOver && ( // Hide guess details when game is over to make room for modal
         <div className="w-full max-w-md bg-gray-800 rounded-lg p-4 mb-6">
           <h3 className="font-bold mb-2">Your Guesses:</h3>
           {guesses.map((g, i) => (
@@ -192,12 +240,26 @@ export default function Daily() {
 
       {/* Game Over Modal */}
       {gameOver && (
-        <div className="bg-gray-800 rounded-lg p-8 max-w-md text-center">
+        <div className="bg-gray-800 rounded-lg p-8 max-w-md text-center w-full">
           <div className="text-4xl mb-4">{won ? "🎉" : "😢"}</div>
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-2xl font-bold mb-4"> {/* Added more margin-bottom */}
             {won ? `You got it in ${guesses.length} ${guesses.length === 1 ? "try" : "tries"}!` : "Game Over!"}
           </h2>
-          <div className="bg-gray-700 rounded-lg p-4 mt-4">
+
+          {/* NEW: Share Button */}
+          <button
+            onClick={handleShare}
+            className={`font-bold py-2 px-6 rounded transition-all duration-200 mb-6 ${
+              copied
+                ? "bg-green-500 text-white" // "Copied!" state
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            {copied ? "Copied!" : "Share Results"}
+          </button>
+          
+          {/* Answer details */}
+          <div className="bg-gray-700 rounded-lg p-4">
             <img
               src={track.album.image}
               alt={track.name}
