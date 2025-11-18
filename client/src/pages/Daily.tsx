@@ -1,113 +1,213 @@
-import { useEffect, useState } from "react";
-import { fetchTrack } from "../api/spotify";
-import type { SpotifyTrack } from "../components/types";
-import { handleGuess } from "../components/handleGuess"; 
+import { useEffect, useState, useRef } from "react";
+import { fetchDailySong, type TrackSuggestion } from "../api/spotify";
+import type { SpotifyTrack } from "../api/spotify";
+import Autocomplete from "../components/Autocomplete";
 import { useNavigate } from "react-router-dom";
 
-const TRACK_IDS = [
-  "4uLU6hMCjMI75M1A2tKUQC",
-  "0VjIjW4GlUZAMYd2vXMi3b",
-  "7qiZfU4dY1lWllzX7mPBI3",
-];
+const MAX_ATTEMPTS = 5;
+const SNIPPET_DURATIONS = [3, 6, 9, 12, 15]; 
 
 export default function Daily() {
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
   const [track, setTrack] = useState<SpotifyTrack | null>(null);
-  const [guess, setGuess] = useState("");
-  const [guesses, setGuesses] = useState<string[]>([]);
+  const [currentAttempt, setCurrentAttempt] = useState(0);
+  const [guesses, setGuesses] = useState<{ correct: boolean; guess: string }[]>([]);
   const [gameOver, setGameOver] = useState(false);
+  const [won, setWon] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const loadRandomTrack = async () => {
-    const randomId = TRACK_IDS[Math.floor(Math.random() * TRACK_IDS.length)];
-    const data = await fetchTrack(randomId);
-    setTrack(data);
-    setGuesses([]);
-    setGameOver(false);
-    setGuess("");
-  };
-
+  // Load daily song on mount
   useEffect(() => {
-    loadRandomTrack();
+    loadDailySong();
   }, []);
 
-  function submitGuess() {
-    if (!track || gameOver) return;
+  const loadDailySong = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchDailySong();
+      setTrack(data);
+    } catch (error) {
+      console.error("Failed to load daily song:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    handleGuess(guess, track, guesses, setGuesses, setGameOver);
-    setGuess("");
+  const playSnippet = () => {
+    if (!audioRef.current || !track?.previewUrl) return;
+
+    const audio = audioRef.current;
+    const duration = SNIPPET_DURATIONS[currentAttempt] || 15;
+
+    audio.currentTime = 0;
+    audio.play();
+    setIsPlaying(true);
+
+    const timeoutId = setTimeout(() => {
+      audio.pause();
+      setIsPlaying(false);
+    }, duration * 1000);
+
+    audio.onpause = () => {
+      setIsPlaying(false);
+      clearTimeout(timeoutId);
+    };
+  };
+
+  const handleGuess = (selectedTrack: TrackSuggestion) => {
+    if (gameOver || !track) return;
+
+    const isCorrect = selectedTrack.id === track.id;
+    
+    setGuesses([...guesses, { correct: isCorrect, guess: `${selectedTrack.name} - ${selectedTrack.artists.join(", ")}` }]);
+
+    if (isCorrect) {
+      setWon(true);
+      setGameOver(true);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+      }
+    } else if (currentAttempt + 1 >= MAX_ATTEMPTS) {
+      setGameOver(true);
+      setWon(false);
+    } else {
+      setCurrentAttempt(currentAttempt + 1);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white">
+        <div className="text-2xl">Loading today's song...</div>
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white">
+        <div className="text-2xl">Failed to load song. Please try again.</div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-3xl font-bold mb-6">🎵 Daily Beatdle</h1>
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-4 right-4 bg-gray-500 px-4 py-2 rounded hover:bg-gray-600">
-        Back to Home
+    <div className="flex flex-col items-center min-h-screen bg-linear-to-b from-gray-900 to-gray-800 text-white p-6">
+      {/* Header */}
+      <div className="w-full max-w-2xl flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">🎵 Guessing Daily Song</h1>
+        <button
+          onClick={() => navigate("/")}
+          className="bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+        >
+          ← Back
         </button>
-      {track ? (
-        <>
-          {track.previewUrl && (
-            <audio controls src={track.previewUrl} className="mb-4" />
-          )}
+      </div>
 
-          <div className="flex gap-2 mb-4">
-            {[...Array(5)].map((_, i) => {
-              const status = guesses[i];
-              let bgColor = "bg-gray-800";
-              if (status === "correct") bgColor = "bg-green-500";
-              else if (status === "wrong") bgColor = "bg-red-500";
-              return (
-                <div
-                  key={i}
-                  className={`${bgColor} w-12 h-12 rounded flex items-center justify-center text-white font-bold`}
-                >
-                  {i + 1}
-                </div>
-              );
-            })}
+      {/* Hidden audio element */}
+      {track.previewUrl && (
+        <audio ref={audioRef} src={track.previewUrl} />
+      )}
+
+      {/* Play Button */}
+      <button
+        onClick={playSnippet}
+        disabled={isPlaying || gameOver}
+        className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl mb-6 transition ${
+          isPlaying
+            ? "bg-gray-600 cursor-not-allowed"
+            : gameOver
+            ? "bg-green-600 hover:bg-green-700"
+            : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        {isPlaying ? "⏸" : "▶️"}
+      </button>
+
+      {/* Waveform visualization */}
+      <div className="flex gap-1 mb-8 h-16 items-end">
+        {[...Array(30)].map((_, i) => {
+          const isUnlocked = i < (SNIPPET_DURATIONS[currentAttempt] / 30) * 30;
+          return (
+            <div
+              key={i}
+              className={`w-2 rounded-t ${
+                isUnlocked ? "bg-red-500" : "bg-gray-600"
+              }`}
+              style={{
+                height: `${20 + Math.random() * 80}%`,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Search/Autocomplete */}
+      {!gameOver && (
+        <div className="w-full max-w-md mb-8">
+          <Autocomplete onSelect={handleGuess} disabled={gameOver} />
+          <p className="text-sm text-gray-400 mt-2 text-center">
+            Attempt {currentAttempt + 1} of {MAX_ATTEMPTS} • {SNIPPET_DURATIONS[currentAttempt]}s unlocked
+          </p>
+        </div>
+      )}
+
+      {/* Guess History */}
+      <div className="flex gap-3 mb-8">
+        {[...Array(MAX_ATTEMPTS)].map((_, i) => {
+          const guess = guesses[i];
+          return (
+            <div
+              key={i}
+              className={`w-16 h-16 rounded-lg flex items-center justify-center font-bold text-lg border-2 ${
+                guess
+                  ? guess.correct
+                    ? "bg-green-500 border-green-600"
+                    : "bg-red-500 border-red-600"
+                  : "bg-gray-700 border-gray-600"
+              }`}
+            >
+              {guess ? (guess.correct ? "✅" : "❌") : i + 1}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Guess details */}
+      {guesses.length > 0 && (
+        <div className="w-full max-w-md bg-gray-800 rounded-lg p-4 mb-6">
+          <h3 className="font-bold mb-2">Your Guesses:</h3>
+          {guesses.map((g, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm py-1">
+              <span>{g.correct ? "✅" : "❌"}</span>
+              <span className="text-gray-300">{g.guess}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Game Over Modal */}
+      {gameOver && (
+        <div className="bg-gray-800 rounded-lg p-8 max-w-md text-center">
+          <div className="text-4xl mb-4">{won ? "🎉" : "😢"}</div>
+          <h2 className="text-2xl font-bold mb-2">
+            {won ? `You got it in ${guesses.length} ${guesses.length === 1 ? "try" : "tries"}!` : "Game Over!"}
+          </h2>
+          <div className="bg-gray-700 rounded-lg p-4 mt-4">
+            <img
+              src={track.album.image}
+              alt={track.name}
+              className="w-32 h-32 mx-auto rounded mb-3"
+            />
+            <p className="text-xl font-bold">{track.name}</p>
+            <p className="text-gray-400">{track.artists.join(", ")}</p>
+            <p className="text-sm text-gray-500 mt-1">{track.album.name}</p>
           </div>
-
-          {!gameOver && (
-            <div className="flex flex-col items-center">
-              <input
-                type="text"
-                placeholder="Type the song name..."
-                value={guess}
-                onChange={(e) => setGuess(e.target.value)}
-                className="bg-white text-black px-4 py-2 rounded mb-4 w-64"
-              />
-              <button
-                onClick={submitGuess}
-                className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600 mb-2"
-              >
-                Submit
-              </button>
-            </div>
-          )}
-
-          {gameOver && (
-            <div className="mt-4 text-center">
-              <div className="text-2xl font-bold">
-                {guesses.includes("correct") ? "🎉 You got it!" : "💀 Game Over!"}
-              </div>
-              <p className="text-lg mt-2">Song was: {track.name}</p>
-
-              {/* Buttons */}
-              <div className="flex gap-4 mt-4 justify-center">
-                <button
-                  onClick={loadRandomTrack}
-                  className="bg-green-500 px-4 py-2 rounded hover:bg-green-600"
-                >
-                  Try Again
-                </button>
-              </div>
-              
-            </div>
-          )}
-        </>
-      ) : (
-        <p>Loading song...</p>
+        </div>
       )}
     </div>
   );

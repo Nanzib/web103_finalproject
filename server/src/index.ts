@@ -31,22 +31,42 @@ app.get('/api/spotify/track/:id', async (req, res) => {
   }
 });
 
+app.get('/api/spotify/search', async (req, res) => {
+  try {
+    const query = req.query.q as string;
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ error: 'Missing or empty search query' });
+    }
+    const results = await searchTracks(query, 5);
+    res.json({ results });
+  } catch (error) {
+    console.error('Error searching tracks:', error);
+    res.status(500).json({ 
+      error: 'Failed to search tracks',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.get('/api/spotify/daily-song', async (req, res) => {
+  try {
+    const dailyTrackId = '2qSkIjg1o9h3YT9RAgYN75';
+    const track = await getTrack(dailyTrackId);
+    res.json(track);
+  } catch (error) {
+    console.error('Error fetching daily song:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch daily song',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // callback route for Spotify OAuth if we need it later
 // spotify asked me to have a callback URL obligatory 
 app.get('/callback', (req, res) => {
   console.log('Spotify callback hit with params:', req.query);
   res.send('Callback received');
-});
-app.get('/api/spotify/search', async (req, res) => {
-  try {
-    const q = req.query.q as string;
-    if (!q) return res.status(400).json({ error: 'Missing search query' });
-    const results = await searchTracks(q);
-    res.json(results);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to search tracks' });
-  }
 });
 
 app.listen(PORT, () => {
