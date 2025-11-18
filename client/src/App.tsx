@@ -6,6 +6,7 @@ import './index.css'; // Make sure Tailwind CSS is imported here or main.tsx
 import CreateLobby from './pages/CreateLobby';
 import JoinLobby from './pages/JoinLobby';
 import MultiplayerLobby from './pages/MultiplayerLobby';
+import Profile from './pages/Profile.tsx';
 function App() {
   return (
     <Router>
@@ -15,7 +16,7 @@ function App() {
         <Route path="/create-lobby" element={<CreateLobby />} />
         <Route path="/join-lobby" element={<JoinLobby />} />
         <Route path="/multiplayer/:lobbyId" element={<MultiplayerLobby />} />
-
+        <Route path="/profile/:id" element={<Profile />} />
       </Routes>
     </Router>
   );
