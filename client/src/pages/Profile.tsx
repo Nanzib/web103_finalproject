@@ -1,7 +1,8 @@
 // client/src/pages/Profile.tsx
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+// Import the new reusable Header
+import Header from '../components/Header';
 
 // Define a type for our user data to match the database table
 interface UserProfile {
@@ -68,8 +69,10 @@ const Profile: React.FC = () => {
 
   return (
     // Main profile page UI
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <Link to="/" className="text-blue-400 hover:underline">&larr; Back to Home</Link>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Use the new reusable Header */}
+      <Header />
+
       <div className="max-w-md mx-auto bg-gray-800 rounded-lg shadow-lg p-6 mt-4">
         <h1 className="text-3xl font-bold mb-4 text-center">{user.username}</h1>
         <p className="text-gray-400 mb-6 text-center">

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { getTrack, searchTracks } from '../services/spotify.js';
 import userRoutes from './routes/users.js';
+import leaderboardRoutes from './routes/leaderboard.js';
 
 dotenv.config();
 
@@ -12,8 +13,8 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
-// Plug in the user routes under the /api/users namespace
 app.use('/api/users', userRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Basic test route
 app.get('/', (req, res) => {

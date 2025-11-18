@@ -1,22 +1,17 @@
 // client/src/pages/Home.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-// Import all the icons we need
-import { FaCalendarAlt, FaPlus, FaSignInAlt, FaUserCircle } from 'react-icons/fa';
+// Import only the icons needed for this page
+import { FaCalendarAlt, FaPlus, FaSignInAlt } from 'react-icons/fa';
+// Import the new reusable Header
+import Header from '../components/Header';
 
 const Home: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 font-sans text-white">
-      {/* Header/Nav Placeholder */}
-      <header className="flex justify-between items-center p-4 bg-gray-800">
-        
-        {/* Updated Profile Link with User Icon */}
-        <Link to="/profile/1" title="View Profile">
-          <FaUserCircle size={40} className="text-gray-400 hover:text-white transition-colors" />
-        </Link>
-
-        <div className="text-3xl text-white">☰</div>
-      </header>
+      
+      {/* Use the new reusable Header */}
+      <Header />
 
       {/* Main Content */}
       <main className="flex flex-col items-center justify-center flex-grow p-4">

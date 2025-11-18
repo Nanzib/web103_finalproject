@@ -7,6 +7,7 @@ import CreateLobby from './pages/CreateLobby';
 import JoinLobby from './pages/JoinLobby';
 import MultiplayerLobby from './pages/MultiplayerLobby';
 import Profile from './pages/Profile.tsx';
+import Leaderboard from './pages/Leaderboard.tsx';
 function App() {
   return (
     <Router>
@@ -17,6 +18,7 @@ function App() {
         <Route path="/join-lobby" element={<JoinLobby />} />
         <Route path="/multiplayer/:lobbyId" element={<MultiplayerLobby />} />
         <Route path="/profile/:id" element={<Profile />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Routes>
     </Router>
   );
