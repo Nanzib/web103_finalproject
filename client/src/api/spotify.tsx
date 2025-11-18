@@ -41,3 +41,4 @@ export async function searchTracks(query: string): Promise<TrackSuggestion[]> {
     const data = await res.json();
     return data.results || [];
 }
+

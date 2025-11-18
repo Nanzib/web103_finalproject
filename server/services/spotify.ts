@@ -242,7 +242,8 @@ export async function getRandomTrack() {
     console.warn("Failed to get random track from playlist, falling back:", err);
     return getRandomTrack_Fallback();
   }
-}async function getRandomTrack_Fallback() {
+}
+async function getRandomTrack_Fallback() {
     console.warn("Fallback random track called...");
     const token = await getSpotifyAccessToken();
     if (!token) throw new Error("Unable to get Spotify access token");
@@ -265,3 +266,38 @@ export async function getRandomTrack() {
       throw err;
     }
   }
+  
+    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&market=US&limit=${limit}`;
+  
+    try {
+        const response = await fetch(url, {
+            headers: { 
+                'Authorization': `Bearer ${token}` 
+            },
+        });
+  
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Spotify search API error:", errorText);
+            throw new Error(`Spotify API error ${response.status}`);
+        }
+  
+        const data = await response.json();
+  
+        const tracks = data.tracks.items.map((track: any) => ({
+            id: track.id,
+            name: track.name,
+            artists: track.artists.map((artist: any) => artist.name),
+            album: {
+                name: track.album.name,
+                image: track.album.images[2]?.url || track.album.images[0]?.url || null, // Use smallest image for autocomplete
+            },
+            previewUrl: track.preview_url, 
+        }));
+
+        return tracks;
+    } catch (error) {
+        console.error("Error searching tracks from Spotify", error);
+        throw error;
+    }
+}

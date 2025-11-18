@@ -78,6 +78,7 @@ app.get('/api/spotify/random-track', async (req, res) => {
     });
   }
 });
+
 // callback route for Spotify OAuth if we need it later
 // spotify asked me to have a callback URL obligatory 
 app.get('/callback', (req, res) => {
