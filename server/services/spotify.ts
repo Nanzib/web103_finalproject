@@ -49,7 +49,7 @@ export async function getSpotifyAccessToken(): Promise<string | null> {
 
         const data = await response.json();
         cachedToken = data.access_token;
-        // expires in like 3600 normally so I cached it with a small buffer
+
         tokenExpiryTime = Date.now() + (data.expires_in - 60) * 1000;
         
         return cachedToken;
@@ -117,12 +117,11 @@ export async function getTrack(trackId: string) {
 
         const data = await response.json();
         
-        // Im getting the preview URL by passing song name and artist for the finder
+        // Use preview finder as fallback if API doesn't provide a preview URL
         const songName = data.name;
         const artistName = data.artists[0]?.name || '';
         const previewUrl = await getPreviewUrl(songName, artistName, data.preview_url);
 
-        // If we need more fields for the frontend, yall can change it here
         return {
             id: data.id,
             name: data.name,
@@ -140,7 +139,8 @@ export async function getTrack(trackId: string) {
         throw error;
     }
 }
-//search tracks by query for autocomplete
+
+// search tracks by query for autocomplete
 export async function searchTracks(query: string, limit: number = 5) {
     const token = await getSpotifyAccessToken();
     if (!token) {
@@ -182,9 +182,6 @@ export async function searchTracks(query: string, limit: number = 5) {
     }
 }
 
-//Get a random track from Spotify
-
-// Random track from playlist
 // ----- RECENT TRACK CACHE -----
 const MAX_RECENT_TRACKS = 50;
 const recentTrackIds = new Set<string>();
@@ -204,7 +201,7 @@ function addRecentTrack(trackId: string) {
 }
 
 // ----- RANDOM TRACK FUNCTION -----
-export async function getRandomTrack() {
+export async function getRandomTrack(exclude: string[] = []) { // Added exclude parameter
   const token = await getSpotifyAccessToken();
   if (!token) throw new Error("Unable to get Spotify access token");
 
@@ -219,21 +216,25 @@ export async function getRandomTrack() {
     if (!response.ok) throw new Error(`Spotify API error ${response.status}`);
     const data = await response.json();
 
-    // Filter valid tracks and remove recently played
+    // Combine recent tracks cache and explicit exclusion list
+    const excludedIds = new Set([...recentTrackIds, ...exclude]);
+
+    // Filter valid tracks and remove recently played/excluded
     const validTracks = data.items
       .map((item: any) => item.track)
-      .filter((track: any) => track?.id && !recentTrackIds.has(track.id));
+      .filter((track: any) => track?.id && !excludedIds.has(track.id));
 
     if (validTracks.length === 0) {
-      console.warn("All tracks recently played, clearing cache...");
+      console.warn("All tracks recently played/excluded, clearing cache...");
       recentTrackIds.clear();
-      return getRandomTrack(); // Retry after clearing
+      // Only return a fallback, do not recursively call getRandomTrack without fixing the source list
+      return getRandomTrack_Fallback();
     }
 
     // Pick a random track
     const randomTrack = validTracks[Math.floor(Math.random() * validTracks.length)];
 
-    // Add to recent cache
+    // Add to recent cache (used only for daily/single-player mode, harmless here)
     addRecentTrack(randomTrack.id);
 
     // Return full track info
@@ -243,6 +244,7 @@ export async function getRandomTrack() {
     return getRandomTrack_Fallback();
   }
 }
+
 async function getRandomTrack_Fallback() {
     console.warn("Fallback random track called...");
     const token = await getSpotifyAccessToken();
@@ -266,38 +268,3 @@ async function getRandomTrack_Fallback() {
       throw err;
     }
   }
-  
-    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&market=US&limit=${limit}`;
-  
-    try {
-        const response = await fetch(url, {
-            headers: { 
-                'Authorization': `Bearer ${token}` 
-            },
-        });
-  
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Spotify search API error:", errorText);
-            throw new Error(`Spotify API error ${response.status}`);
-        }
-  
-        const data = await response.json();
-  
-        const tracks = data.tracks.items.map((track: any) => ({
-            id: track.id,
-            name: track.name,
-            artists: track.artists.map((artist: any) => artist.name),
-            album: {
-                name: track.album.name,
-                image: track.album.images[2]?.url || track.album.images[0]?.url || null, // Use smallest image for autocomplete
-            },
-            previewUrl: track.preview_url, 
-        }));
-
-        return tracks;
-    } catch (error) {
-        console.error("Error searching tracks from Spotify", error);
-        throw error;
-    }
-}
