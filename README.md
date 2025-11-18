@@ -60,11 +60,11 @@ Users can create or join real-time multiplayer games via a shareable link. The h
 
 [gif goes here]
 
-### Leaderboards
+### Leaderboards ✅
 
 Displays high scores and player rankings. This includes a leaderboard for the Daily Song Challenge (ranking players by speed and attempts) and a separate all-time leaderboard for total points earned in multiplayer games.
 
-[gif goes here]
+![GIF](https://i.imgur.com/VeGlDzJ.gif)
 
 ### User Profiles & Stats ✅
 
