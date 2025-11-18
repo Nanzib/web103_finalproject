@@ -28,9 +28,19 @@ This project draws inspiration from several popular games and platforms, blendin
 
 ## Tech Stack
 
-Frontend:
+### Frontend
+* **Core:** React, TypeScript, Vite
+* **Styling:** Tailwind CSS
+* **Routing:** React Router
 
-Backend:
+### Backend
+* **Core:** Node.js, Express, TypeScript
+* **Database:** PostgreSQL
+* **API:** Spotify Web API (with `spotify-preview-finder` fallback)
+* **Real-time:** Socket.IO
+
+### Deployment
+* **Platform:** Render
 
 ## Features
 
