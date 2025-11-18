@@ -14,10 +14,12 @@ export interface TrackSuggestion {
     image?: string;
   }
 export interface Player {
+    id: string;
     name: string;
     score: number;
     guesses: string[];
     finished: boolean;
+    isHost: boolean;
 }
 
 export type LobbyPayload =
