@@ -70,13 +70,13 @@ Displays high scores and player rankings. This includes a leaderboard for the Da
 
 Registered users have a personal profile page that tracks their game history, daily challenge streaks, average guess speed, win/loss ratio, and other key statistics.
 
-![My App GIF](https://i.imgur.com/ml9M3Us.gif)
+![GIF](https://i.imgur.com/ml9M3Us.gif)
 
-### Shareable Results
+### Shareable Results ✅
 
 After completing the Daily Song Challenge, users can copy their results to the clipboard as a spoiler-free grid of emojis. This allows them to share their performance on social media without revealing the song title.
 
-[gif goes here]
+![GIF](https://i.imgur.com/TnsED0I.gif)
 
 ### Autofill Guessing
 
