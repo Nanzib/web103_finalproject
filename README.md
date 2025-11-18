@@ -66,11 +66,11 @@ Displays high scores and player rankings. This includes a leaderboard for the Da
 
 [gif goes here]
 
-### User Profiles & Stats
+### User Profiles & Stats ✅
 
 Registered users have a personal profile page that tracks their game history, daily challenge streaks, average guess speed, win/loss ratio, and other key statistics.
 
-[gif goes here]
+![My App GIF](https://i.imgur.com/ml9M3Us.gif)
 
 ### Shareable Results
 
