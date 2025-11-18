@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { getTrack, searchTracks } from '../services/spotify.js';
+import userRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -10,6 +11,9 @@ const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
+
+// Plug in the user routes under the /api/users namespace
+app.use('/api/users', userRoutes);
 
 // Basic test route
 app.get('/', (req, res) => {

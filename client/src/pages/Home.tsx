@@ -1,12 +1,20 @@
+// client/src/pages/Home.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+// Import all the icons we need
+import { FaCalendarAlt, FaPlus, FaSignInAlt, FaUserCircle } from 'react-icons/fa';
 
 const Home: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 font-sans text-white">
       {/* Header/Nav Placeholder */}
       <header className="flex justify-between items-center p-4 bg-gray-800">
-        <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
+        
+        {/* Updated Profile Link with User Icon */}
+        <Link to="/profile/1" title="View Profile">
+          <FaUserCircle size={40} className="text-gray-400 hover:text-white transition-colors" />
+        </Link>
+
         <div className="text-3xl text-white">☰</div>
       </header>
 
@@ -32,9 +40,13 @@ const Home: React.FC = () => {
 
         {/* Action Buttons Area */}
         <div className="flex flex-col md:flex-row justify-center items-center space-y-6 md:space-y-0 md:space-x-12 w-full max-w-4xl">
+          
           {/* Play (Daily) Button */}
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold mb-4">ICON 1</div>
+            {/* Updated ICON 1 */}
+            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold mb-4">
+              <FaCalendarAlt size={48} />
+            </div>
             <Link
               to="/daily"
               className="w-48 h-16 bg-blue-600 flex items-center justify-center text-white text-xl font-semibold rounded hover:bg-blue-700 transition"
@@ -43,9 +55,12 @@ const Home: React.FC = () => {
             </Link>
           </div>
 
-          {/* Join (Session) Button */}
+          {/* Create (Session) Button */}
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold mb-4">ICON 2</div>
+            {/* Updated ICON 2 */}
+            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold mb-4">
+              <FaPlus size={48} />
+            </div>
             <Link
               to="/create-lobby"
               className="w-48 h-16 bg-blue-600 flex items-center justify-center text-white text-xl font-semibold rounded hover:bg-blue-700 transition"
@@ -54,9 +69,12 @@ const Home: React.FC = () => {
             </Link>
           </div>
 
-          {/* Extras Button */}
+          {/* Join (Session) Button */}
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold mb-4">ICON 3</div>
+            {/* Updated ICON 3 */}
+            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold mb-4">
+              <FaSignInAlt size={48} />
+            </div>
             <Link
               to="/join-lobby"
               className="w-48 h-16 bg-blue-600 flex items-center justify-center text-white text-xl font-semibold rounded hover:bg-blue-700 transition"
