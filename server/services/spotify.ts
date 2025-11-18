@@ -182,61 +182,86 @@ export async function searchTracks(query: string, limit: number = 5) {
     }
 }
 
-// Get a random track from Spotify
-export async function getRandomTrack() {
-    const token = await getSpotifyAccessToken();
-    if (!token) {
-        throw new Error("Unable to get Spotify access token");
-    }
+//Get a random track from Spotify
 
-    //Generate a random search query.
-    const randomCharacter = String.fromCharCode(97 + Math.floor(Math.random() * 26));
-    const randomQuery = `'%${randomCharacter}%'`; 
+// Random track from playlist
+// ----- RECENT TRACK CACHE -----
+const MAX_RECENT_TRACKS = 50;
+const recentTrackIds = new Set<string>();
 
-    //Generate a random offset to get different results.
-    const randomOffset = Math.floor(Math.random() * 999);
+function addRecentTrack(trackId: string) {
+  // Remove if already present to refresh its position
+  if (recentTrackIds.has(trackId)) recentTrackIds.delete(trackId);
 
-    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(randomQuery)}&type=track&market=US&limit=1&offset=${randomOffset}`;
+  // Add as most recent
+  recentTrackIds.add(trackId);
 
-    try {
-        const response = await fetch(url, {
-            headers: { 
-                'Authorization': `Bearer ${token}` 
-            },
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Spotify search API error (random):", errorText);
-            throw new Error(`Spotify API error ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.tracks || data.tracks.items.length === 0) {
-            // Fallback: just search for the letter and get the first track
-            console.warn("Random search failed, falling back to simple search.");
-            const tracks = await searchTracks(randomCharacter, 1);
-            if (tracks.length === 0) {
-                // As a last resort, search for 'a'
-                const fallbackTracks = await searchTracks('a', 1);
-                if (fallbackTracks.length === 0) throw new Error("No random track found");
-                return getTrack(fallbackTracks[0].id);
-            }
-            return getTrack(tracks[0].id);
-        }
-
-        const track = data.tracks.items[0];
-
-        // The search result is partial. We need full details from getTrack
-        // to ensure our preview URL logic is applied.
-        return getTrack(track.id);
-
-    } catch (error) {
-        console.error("Error searching random track from Spotify", error);
-        // Fallback in case of any error
-        const fallbackTracks = await searchTracks('a', 1);
-        if (fallbackTracks.length === 0) throw new Error("No random track found");
-        return getTrack(fallbackTracks[0].id);
-    }
+  // Remove oldest if exceeding max
+  while (recentTrackIds.size > MAX_RECENT_TRACKS) {
+    const oldest = recentTrackIds.values().next().value;
+    recentTrackIds.delete(oldest || "");
+  }
 }
+
+// ----- RANDOM TRACK FUNCTION -----
+export async function getRandomTrack() {
+  const token = await getSpotifyAccessToken();
+  if (!token) throw new Error("Unable to get Spotify access token");
+
+  // Spotify popular playlist
+  const POPULAR_PLAYLIST_ID = "37i9dQZEVXbLp5XoPON0wI";
+  const url = `https://api.spotify.com/v1/playlists/${POPULAR_PLAYLIST_ID}/tracks?market=US&limit=100`;
+
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error(`Spotify API error ${response.status}`);
+    const data = await response.json();
+
+    // Filter valid tracks and remove recently played
+    const validTracks = data.items
+      .map((item: any) => item.track)
+      .filter((track: any) => track?.id && !recentTrackIds.has(track.id));
+
+    if (validTracks.length === 0) {
+      console.warn("All tracks recently played, clearing cache...");
+      recentTrackIds.clear();
+      return getRandomTrack(); // Retry after clearing
+    }
+
+    // Pick a random track
+    const randomTrack = validTracks[Math.floor(Math.random() * validTracks.length)];
+
+    // Add to recent cache
+    addRecentTrack(randomTrack.id);
+
+    // Return full track info
+    return getTrack(randomTrack.id);
+  } catch (err) {
+    console.warn("Failed to get random track from playlist, falling back:", err);
+    return getRandomTrack_Fallback();
+  }
+}async function getRandomTrack_Fallback() {
+    console.warn("Fallback random track called...");
+    const token = await getSpotifyAccessToken();
+    if (!token) throw new Error("Unable to get Spotify access token");
+  
+    // Simple fallback: search for a random letter
+    const randomChar = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+    const url = `https://api.spotify.com/v1/search?q=${randomChar}&type=track&limit=1&market=US`;
+  
+    try {
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }});
+      if (!response.ok) throw new Error(`Spotify API error ${response.status}`);
+      const data = await response.json();
+  
+      const track = data.tracks.items[0];
+      if (!track) throw new Error("No track found in fallback");
+  
+      return getTrack(track.id);
+    } catch (err) {
+      console.error("Fallback track fetch failed:", err);
+      throw err;
+    }
+  }
