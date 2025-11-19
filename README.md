@@ -52,7 +52,7 @@ A Wordle-style daily game where all users have a limited number of attempts to g
 
     Players see their score based on how accurate they guess. Rewards early correct guesses and encourages careful listening
 
-[Kapture 2025-11-11 at 23 20 59](https://github.com/user-attachments/assets/c996b28b-a825-463b-8ee0-8df726d336b3)
+![Demo of Beatdle Gameplay](https://github-production-user-asset-6210df.s3.amazonaws.com/30604987/513098164-c996b28b-a825-463b-8ee0-8df726d336b3.gif?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20251119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251119T175058Z&X-Amz-Expires=300&X-Amz-Signature=163d4ddfeae3bd36472904cad5a6cc752d299ed0f109649b9213dba797e35239&X-Amz-SignedHeaders=host)
 
 ### Live Multiplayer Sessions
 
@@ -77,39 +77,5 @@ Registered users have a personal profile page that tracks their game history, da
 After completing the Daily Song Challenge, users can copy their results to the clipboard as a spoiler-free grid of emojis. This allows them to share their performance on social media without revealing the song title.
 
 ![GIF](https://i.imgur.com/TnsED0I.gif)
-
-### Autofill Guessing
-
-An intelligent search bar that provides autofill suggestions as the user types their guess. This connects to the music database to prevent misspellings and help users quickly find and submit the correct song title and artist.
-
-[gif goes here]
-
-### Progressive Audio Snippets
-
-The core mechanic where players first hear a very short audio clip (e.g., 3 seconds). With each failed or skipped attempt, a longer snippet of the song is unlocked, making it progressively easier to guess.
-
-[gif goes here]
-
-### Custom Game Settings
-
-The host of a multiplayer session can customize the game's content. Settings include selecting specific genres (e.g., Rock, Hip-Hop), decades (e.g., 80s, 90s), or even creating a quiz based on a single artist.
-
-[gif goes here]
-
-### Optional Hints
-
-[short description goes here]
-
-[gif goes here]
-
-### Dynamic Scoring System
-
-A points-based system that rewards players for both speed and accuracy. In multiplayer, players who guess the song correctly and quickly earn the most points. In the daily challenge, the final score is based on the number of attempts used.
-
-[gif goes here]
-
-### [ADDITIONAL FEATURES GO HERE - ADD ALL FEATURES HERE IN THE FORMAT ABOVE; you will check these off and add gifs as you complete them]
-
-## Installation Instructions
 
 [instructions go here]
