@@ -48,11 +48,11 @@ This project draws inspiration from several popular games and platforms, blendin
 
 A Wordle-style daily game where all users have a limited number of attempts to guess the same "Song of the Day." Players can listen to progressively longer audio snippets with each guess to help them identify the track.
 
-    Sub Feature - Score System ✅ 
+**Sub Feature - Score System** ✅ 
 
-    Players see their score based on how accurate they guess. Rewards early correct guesses and encourages careful listening
+Players see their score based on how accurate they guess. Rewards early correct guesses and encourages careful listening.
 
-![Demo of Beatdle Gameplay](https://i.imgur.com/SFp23vn.gif)
+![Daily Song Challenge Demo](https://i.imgur.com/SFp23vn.gif)
 
 ### Live Multiplayer Sessions
 
