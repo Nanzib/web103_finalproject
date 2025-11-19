@@ -52,7 +52,7 @@ A Wordle-style daily game where all users have a limited number of attempts to g
 
     Players see their score based on how accurate they guess. Rewards early correct guesses and encourages careful listening
 
-![Demo of Beatdle Gameplay](https://github-production-user-asset-6210df.s3.amazonaws.com/30604987/513098164-c996b28b-a825-463b-8ee0-8df726d336b3.gif?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20251119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251119T175058Z&X-Amz-Expires=300&X-Amz-Signature=163d4ddfeae3bd36472904cad5a6cc752d299ed0f109649b9213dba797e35239&X-Amz-SignedHeaders=host)
+![Demo of Beatdle Gameplay](https://i.imgur.com/SFp23vn.gif)
 
 ### Live Multiplayer Sessions
 
