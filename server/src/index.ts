@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { getTrack, searchTracks,getRandomTrack } from '../services/spotify.js';
+import { createServer } from 'http'; // Needed for WebSockets
+import { setupWebSocket } from './ws-server.js'; // Import the function we made
+import { getTrack, searchTracks, getRandomTrack } from './services/spotify.js'; // Updated path (removed ../)
 import userRoutes from './routes/users.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 
@@ -10,11 +12,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors());
+// Allow connections from your future frontend
+app.use(cors({
+    origin: [
+        'http://localhost:5173', // Vite local
+        'https://beatdle-client.onrender.com' // Your future Render frontend
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 app.use('/api/users', userRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+
+// Create the HTTP server manually so we can share it with WebSockets
+const server = createServer(app);
+
+// Attach WebSocket server to the HTTP server
+setupWebSocket(server);
 
 // Basic test route
 app.get('/', (req, res) => {
@@ -23,7 +38,6 @@ app.get('/', (req, res) => {
 
 app.get('/api/spotify/track/:id', async (req, res) => {
   const { id } = req.params;
-
   try {
     const track = await getTrack(id);
     res.json(track);
@@ -66,6 +80,7 @@ app.get('/api/spotify/daily-song', async (req, res) => {
     });
   }
 });
+
 app.get('/api/spotify/random-track', async (req, res) => {
   try {
     const track = await getRandomTrack();
@@ -79,13 +94,12 @@ app.get('/api/spotify/random-track', async (req, res) => {
   }
 });
 
-// callback route for Spotify OAuth if we need it later
-// spotify asked me to have a callback URL obligatory 
 app.get('/callback', (req, res) => {
   console.log('Spotify callback hit with params:', req.query);
   res.send('Callback received');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// IMPORTANT: Listen using 'server', not 'app'
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
