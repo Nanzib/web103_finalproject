@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 8000;
 app.use(cors({
     origin: [
         'http://localhost:5173', // Vite local
-        'https://beatdle-client.onrender.com' // Your future Render frontend
+        'https://web103-finalproject-qwmk.onrender.com' // Your future Render frontend
     ],
     credentials: true
 }));
