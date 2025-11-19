@@ -58,7 +58,7 @@ A Wordle-style daily game where all users have a limited number of attempts to g
 
 Users can create or join real-time multiplayer games via a shareable link. The host customizes the game, and all players compete simultaneously to guess songs, with a live leaderboard tracking scores after each round.
 
-[gif goes here]
+![GIF](https://i.imgur.com/S90xPmR.gif)
 
 ### Leaderboards ✅
 
