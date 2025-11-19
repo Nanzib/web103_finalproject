@@ -1,9 +1,6 @@
-// client/src/pages/Leaderboard.tsx
 import React, { useState, useEffect } from 'react';
-// Import the new reusable Header
 import Header from '../components/Header';
 
-// Define a type for our leaderboard entry
 interface LeaderboardEntry {
   username: string;
   max_streak: number;
@@ -18,8 +15,15 @@ const Leaderboard: React.FC = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        // Fetch data from the new leaderboard API endpoint
-        const response = await fetch('/api/leaderboard');
+        // --- CRITICAL FIX: Define the Server URL ---
+        const API_URL = import.meta.env.PROD 
+          ? 'https://beatdle-server.onrender.com' 
+          : 'http://localhost:8000';
+          
+        // Use the full URL here
+        const response = await fetch(`${API_URL}/api/leaderboard`);
+        // -------------------------------------------
+
         if (!response.ok) {
           throw new Error('Failed to load leaderboard');
         }
@@ -33,7 +37,7 @@ const Leaderboard: React.FC = () => {
     };
 
     fetchLeaderboard();
-  }, []); // This effect runs once when the component mounts
+  }, []);
 
   const renderContent = () => {
     if (loading) {
@@ -74,9 +78,7 @@ const Leaderboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Use the new reusable Header */}
       <Header />
-
       <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-lg overflow-hidden mt-4">
         <h1 className="text-3xl font-bold p-6 text-center">Leaderboard</h1>
         {renderContent()}
