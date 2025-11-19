@@ -18,7 +18,6 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Define API_URL explicitly to avoid proxy issues
   const API_URL = import.meta.env.PROD 
     ? 'https://beatdle-server.onrender.com' 
     : 'http://localhost:8000';
@@ -26,7 +25,6 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Use the full URL
         const response = await fetch(`${API_URL}/api/users/${id}`);
         
         if (!response.ok) {
@@ -42,28 +40,7 @@ const Profile: React.FC = () => {
     };
 
     fetchUserProfile();
-  }, [id]);
-
-  // --- BUTTON HANDLER ---
-  const handleSimulateWin = async () => {
-    if (!user) return;
-    try {
-        const res = await fetch(`${API_URL}/api/users/${user.user_id}/win`, {
-            method: 'PATCH'
-        });
-        
-        if (res.ok) {
-            const updatedUser = await res.json();
-            setUser(updatedUser); // Update screen immediately
-            alert("Win Recorded! Stats Updated.");
-        } else {
-            alert("Failed to update win.");
-        }
-    } catch (err) {
-        console.error("Failed to update", err);
-        alert("Error connecting to server.");
-    }
-  };
+  }, [id, API_URL]);
 
   if (loading) {
     return (
@@ -112,18 +89,6 @@ const Profile: React.FC = () => {
             <div className="text-gray-400">Max Streak</div>
           </div>
         </div>
-
-        {/* DEMO BUTTON FOR VIDEO */}
-        <div className="mt-8 text-center">
-            <button 
-                onClick={handleSimulateWin}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200 shadow-lg"
-            >
-                Simulate Game Win (+1 Score)
-            </button>
-            <p className="text-xs text-gray-500 mt-2">(For Demo: Updates Database Stats)</p>
-        </div>
-
       </div>
     </div>
   );
