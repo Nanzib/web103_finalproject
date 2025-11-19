@@ -52,7 +52,7 @@ A Wordle-style daily game where all users have a limited number of attempts to g
 
 Players see their score based on how accurate they guess. Rewards early correct guesses and encourages careful listening.
 
-![Daily Song Challenge Demo](https://i.imgur.com/SFp23vn.gif)
+<img src="https://i.imgur.com/SFp23vn.gif" alt="Daily Song Challenge Demo" width="100%" />
 
 ### Live Multiplayer Sessions
 
