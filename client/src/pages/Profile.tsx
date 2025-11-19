@@ -18,17 +18,16 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Define API_URL outside useEffect so we can use it in the handle function too
+  const API_URL = import.meta.env.PROD 
+    ? '[https://beatdle-server.onrender.com](https://beatdle-server.onrender.com)' 
+    : 'http://localhost:8000';
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // --- CRITICAL FIX: Define the Server URL ---
-        const API_URL = import.meta.env.PROD 
-          ? 'https://beatdle-server.onrender.com' 
-          : 'http://localhost:8000';
-        
         // Use the full URL here
         const response = await fetch(`${API_URL}/api/users/${id}`);
-        // -------------------------------------------
         
         if (!response.ok) {
           throw new Error('Profile not found');
@@ -43,7 +42,29 @@ const Profile: React.FC = () => {
     };
 
     fetchUserProfile();
-  }, [id]);
+  }, [id, API_URL]);
+
+  // --- HANDLER FOR SIMULATION BUTTON ---
+  const handleSimulateWin = async () => {
+    if (!user) return;
+    try {
+        const res = await fetch(`${API_URL}/api/users/${user.user_id}/win`, {
+            method: 'PATCH'
+        });
+        
+        if (res.ok) {
+            const updatedUser = await res.json();
+            setUser(updatedUser); // Update screen immediately
+            alert("Win Recorded! Database Updated. (Check Leaderboard!)");
+        } else {
+            alert("Failed to update win.");
+        }
+    } catch (err) {
+        console.error("Failed to update", err);
+        alert("Error connecting to server.");
+    }
+  };
+  // -------------------------------------
 
   if (loading) {
     return (
@@ -91,6 +112,18 @@ const Profile: React.FC = () => {
             <div className="text-gray-400">Max Streak</div>
           </div>
         </div>
+
+        {/* DEMO BUTTON: Add this below the grid */}
+        <div className="mt-8 text-center">
+            <button 
+                onClick={handleSimulateWin}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+            >
+                Simulate Game Win (+1 Score)
+            </button>
+            <p className="text-xs text-gray-500 mt-2">(For Demo: Updates Database Stats)</p>
+        </div>
+
       </div>
     </div>
   );
