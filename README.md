@@ -77,5 +77,3 @@ Registered users have a personal profile page that tracks their game history, da
 After completing the Daily Song Challenge, users can copy their results to the clipboard as a spoiler-free grid of emojis. This allows them to share their performance on social media without revealing the song title.
 
 ![GIF](https://i.imgur.com/TnsED0I.gif)
-
-[instructions go here]
