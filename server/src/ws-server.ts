@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Server } from "http";
+import { query } from "./db.js"; // <--- ADDED: Database connection
 
 interface Player {
   id: string;
@@ -9,6 +10,7 @@ interface Player {
   currentAttempt: number;
   isCorrect: boolean;
   guesses: string[];
+  dbId?: number; // <--- ADDED: To track which DB user this is
 }
 
 interface LobbyState {
@@ -20,15 +22,42 @@ interface LobbyState {
   usedTrackIds: string[];
 }
 
-// Store lobbies globally
 const lobbies: Record<string, LobbyState> = {};
 const SCORE_POINTS = [5, 4, 3, 2, 1];
 
-// EXPORT THIS FUNCTION TO USE IN INDEX.TS
+// --- ADDED: Helper to update DB stats when game ends ---
+async function handleGameOverDB(lobby: LobbyState) {
+    try {
+        const maxScore = Math.max(...lobby.players.map((p) => p.score));
+        
+        for (const p of lobby.players) {
+            // Only update if we have a valid DB ID for this player
+            if (p.dbId) {
+                const isWinner = p.score === maxScore && p.score > 0;
+                const gamesWonInc = isWinner ? 1 : 0;
+                
+                // SQL: Increment games played, won, and streak
+                await query(`
+                    UPDATE users 
+                    SET games_played = games_played + 1, 
+                        games_won = games_won + $2,
+                        current_streak = CASE WHEN $2 > 0 THEN current_streak + 1 ELSE 0 END,
+                        max_streak = GREATEST(max_streak, CASE WHEN $2 > 0 THEN current_streak + 1 ELSE max_streak END)
+                    WHERE user_id = $1
+                `, [p.dbId, gamesWonInc]);
+                
+                console.log(`Updated stats for User ${p.dbId}: Played +1, Won +${gamesWonInc}`);
+            }
+        }
+    } catch (err) {
+        console.error("Failed to update DB stats on Game Over:", err);
+    }
+}
+// -------------------------------------------------------
+
 export function setupWebSocket(server: Server) {
   console.log("Setting up WebSocket server attached to HTTP...");
   
-  // NO PORT HERE! We use the existing 'server'
   const wss = new WebSocketServer({ server });
 
   wss.on("connection", (ws) => {
@@ -41,7 +70,6 @@ export function setupWebSocket(server: Server) {
       try {
         const msg = JSON.parse(message.toString());
         
-        // Handle Keep-Alive (Ping/Pong) to prevent timeouts
         if (msg.type === 'ping') {
             ws.send(JSON.stringify({ type: 'pong' }));
             return;
@@ -49,7 +77,8 @@ export function setupWebSocket(server: Server) {
 
         switch (msg.type) {
           case "joinLobby": {
-            const { lobbyId, name, isHost } = msg.payload;
+            // ADDED: Accept 'userId' from client
+            const { lobbyId, name, isHost, userId } = msg.payload;
             currentLobbyId = lobbyId;
 
             currentPlayerId =
@@ -75,6 +104,7 @@ export function setupWebSocket(server: Server) {
                 currentAttempt: 0,
                 isCorrect: false,
                 guesses: [],
+                dbId: userId // <--- ADDED: Store the DB ID on the player object
               };
               lobby.players.push(newPlayer);
               lobby.clients.push(ws);
@@ -127,6 +157,10 @@ export function setupWebSocket(server: Server) {
               if (lobby.round >= lobby.maxRounds) {
                 const maxScore = Math.max(...lobby.players.map((p) => p.score));
                 const winners = lobby.players.filter((p) => p.score === maxScore);
+                
+                // ADDED: Update DB when game ends naturally
+                await handleGameOverDB(lobby);
+
                 broadcastToLobby(lobbyId, {
                   type: "gameOver",
                   payload: { winners, players: lobby.players },
@@ -194,6 +228,10 @@ async function startNextRound(lobbyId: string) {
   if (lobby.round > lobby.maxRounds) {
     const maxScore = Math.max(...lobby.players.map((p) => p.score));
     const winners = lobby.players.filter((p) => p.score === maxScore);
+    
+    // ADDED: Update DB if game ends via "Next Song" flow (safety catch)
+    await handleGameOverDB(lobby);
+
     broadcastToLobby(lobbyId, {
       type: "gameOver",
       payload: { winners, players: lobby.players },
@@ -209,9 +247,7 @@ async function startNextRound(lobbyId: string) {
 
   let track;
   try {
-    // DYNAMIC PORT: Use the Render-assigned port
     const port = process.env.PORT || 8000;
-    // IMPORTANT: Use 127.0.0.1 to talk to yourself
     const res = await fetch(`http://127.0.0.1:${port}/api/spotify/random-track`, {
       method: "POST",
       headers: {
