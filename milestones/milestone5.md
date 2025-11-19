@@ -80,7 +80,7 @@ Complete the checklist below detailing each baseline, custom, and stretch featur
 
 ## Final Demo GIF
 
-🔗 [Here's a GIF walkthrough of the final project](👉🏾👉🏾👉🏾 your link here)
+🔗 [Here's a GIF walkthrough of the final project](https://i.imgur.com/ndFC7Kd.gif)
 
 ## Reflection
 
