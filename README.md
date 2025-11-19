@@ -52,7 +52,7 @@ A Wordle-style daily game where all users have a limited number of attempts to g
 
     Players see their score based on how accurate they guess. Rewards early correct guesses and encourages careful listening
 
-[Kapture 2025-11-11 at 23 20 59](https://github.com/user-attachments/assets/c996b28b-a825-463b-8ee0-8df726d336b3)
+![Kapture 2025-11-19 at 12 52 57](https://github.com/user-attachments/assets/fbd1bffb-18dc-403a-8005-27694c185cca)
 
 ### Live Multiplayer Sessions
 
