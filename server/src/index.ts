@@ -6,6 +6,7 @@ import { setupWebSocket } from './ws-server.js'; // Import the function we made
 import { getTrack, searchTracks, getRandomTrack } from './services/spotify.js'; // Updated path (removed ../)
 import userRoutes from './routes/users.js';
 import leaderboardRoutes from './routes/leaderboard.js';
+import { query } from './db.js'; // <--- ADDED THIS IMPORT
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ const PORT = process.env.PORT || 8000;
 app.use(cors({
     origin: [
         'http://localhost:5173', // Vite local
-        'https://web103-finalproject-qwmk.onrender.com' // Your future Render frontend
+        'https://web103-finalproject-qwmk.onrender.com' // Your deployed frontend
     ],
     credentials: true
 }));
@@ -93,6 +94,42 @@ app.get('/api/spotify/random-track', async (req, res) => {
     });
   }
 });
+
+// --- SECRET SEED ROUTE (Run once to fix Profile/Leaderboard) ---
+app.get('/api/seed-db', async (req, res) => {
+  try {
+    // 1. Create the table if it doesn't exist (Safety check)
+    // FIX: Added the empty array [] parameter to satisfy TypeScript
+    await query(`
+      CREATE TABLE IF NOT EXISTS users (
+        user_id SERIAL PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        games_played INT DEFAULT 0,
+        games_won INT DEFAULT 0,
+        current_streak INT DEFAULT 0,
+        max_streak INT DEFAULT 0
+      );
+    `, []); 
+
+    // 2. Insert a Demo User (Force ID=1 so /profile/1 works)
+    // FIX: Added the empty array [] parameter
+    await query(`
+      INSERT INTO users (user_id, username, games_played, games_won, current_streak, max_streak)
+      VALUES (1, 'DemoUser', 12, 8, 3, 5)
+      ON CONFLICT (user_id) DO NOTHING;
+    `, []); 
+
+    res.send('🎉 Database seeded! You can now visit /profile/1');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+        error: 'Failed to seed DB', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+// ---------------------------------------------------------------
 
 app.get('/callback', (req, res) => {
   console.log('Spotify callback hit with params:', req.query);
