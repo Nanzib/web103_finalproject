@@ -14,7 +14,7 @@ This unit, be sure to complete all tasks listed below. To complete a task, place
 - [X] In this document, complete the **Reflection** section below
 - [X] 🚩🚩🚩**Complete the Final Project Feature Checklist section below**, detailing each feature you completed in the project (ONLY include features you implemented, not features you planned)
 - [X] 🚩🚩🚩**Record a GIF showing a complete run-through of your app** that displays all the components included in the **Final Project Feature Checklist** below
-  - [ ] Include this GIF in the **Final Demo GIF** section below
+  - [X] Include this GIF in the **Final Demo GIF** section below
 
 ## Final Project Feature Checklist
 
