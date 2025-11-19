@@ -1,5 +1,3 @@
-// client/src/components/Header.tsx
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUserCircle } from 'react-icons/fa';
@@ -12,7 +10,7 @@ const Header: React.FC = () => {
   return (
     <>
       <header className="flex justify-between items-center p-4 bg-gray-800">
-        {/* Profile Link */}
+        {/* Profile Link - Hardcoded to ID 1 for the Demo */}
         <Link to="/profile/1" title="View Profile">
           <FaUserCircle size={40} className="text-gray-400 hover:text-white transition-colors" />
         </Link>

@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Server } from "http";
-import { query } from "./db.js"; // <--- ADDED: Database connection
+import { query } from "./db.js";
+import { getRandomTrack } from "./services/spotify.js"; // <--- ADDED: Direct import
 
 interface Player {
   id: string;
@@ -10,7 +11,7 @@ interface Player {
   currentAttempt: number;
   isCorrect: boolean;
   guesses: string[];
-  dbId?: number; // <--- ADDED: To track which DB user this is
+  dbId?: number;
 }
 
 interface LobbyState {
@@ -25,18 +26,13 @@ interface LobbyState {
 const lobbies: Record<string, LobbyState> = {};
 const SCORE_POINTS = [5, 4, 3, 2, 1];
 
-// --- ADDED: Helper to update DB stats when game ends ---
 async function handleGameOverDB(lobby: LobbyState) {
     try {
         const maxScore = Math.max(...lobby.players.map((p) => p.score));
-        
         for (const p of lobby.players) {
-            // Only update if we have a valid DB ID for this player
             if (p.dbId) {
                 const isWinner = p.score === maxScore && p.score > 0;
                 const gamesWonInc = isWinner ? 1 : 0;
-                
-                // SQL: Increment games played, won, and streak
                 await query(`
                     UPDATE users 
                     SET games_played = games_played + 1, 
@@ -45,31 +41,24 @@ async function handleGameOverDB(lobby: LobbyState) {
                         max_streak = GREATEST(max_streak, CASE WHEN $2 > 0 THEN current_streak + 1 ELSE max_streak END)
                     WHERE user_id = $1
                 `, [p.dbId, gamesWonInc]);
-                
-                console.log(`Updated stats for User ${p.dbId}: Played +1, Won +${gamesWonInc}`);
             }
         }
     } catch (err) {
         console.error("Failed to update DB stats on Game Over:", err);
     }
 }
-// -------------------------------------------------------
 
 export function setupWebSocket(server: Server) {
   console.log("Setting up WebSocket server attached to HTTP...");
-  
   const wss = new WebSocketServer({ server });
 
   wss.on("connection", (ws) => {
-    console.log("New connection established");
-
     let currentLobbyId: string | null = null;
     let currentPlayerId: string | null = null;
 
     ws.on("message", async (message) => {
       try {
         const msg = JSON.parse(message.toString());
-        
         if (msg.type === 'ping') {
             ws.send(JSON.stringify({ type: 'pong' }));
             return;
@@ -77,12 +66,9 @@ export function setupWebSocket(server: Server) {
 
         switch (msg.type) {
           case "joinLobby": {
-            // ADDED: Accept 'userId' from client
             const { lobbyId, name, isHost, userId } = msg.payload;
             currentLobbyId = lobbyId;
-
-            currentPlayerId =
-              Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+            currentPlayerId = Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 
             if (!lobbies[lobbyId]) {
               lobbies[lobbyId] = {
@@ -104,18 +90,16 @@ export function setupWebSocket(server: Server) {
                 currentAttempt: 0,
                 isCorrect: false,
                 guesses: [],
-                dbId: userId // <--- ADDED: Store the DB ID on the player object
+                dbId: userId
               };
               lobby.players.push(newPlayer);
               lobby.clients.push(ws);
             }
 
-            ws.send(
-              JSON.stringify({
-                type: "joinedLobby",
-                payload: { yourId: currentPlayerId, players: lobby.players },
-              })
-            );
+            ws.send(JSON.stringify({
+              type: "joinedLobby",
+              payload: { yourId: currentPlayerId, players: lobby.players },
+            }));
 
             broadcastToLobby(lobbyId, {
               type: "updatePlayers",
@@ -126,10 +110,6 @@ export function setupWebSocket(server: Server) {
 
           case "startGame": {
             const { lobbyId } = msg.payload;
-            const lobby = lobbies[lobbyId];
-            if (!lobby) return;
-
-            lobby.round = 0;
             await startNextRound(lobbyId);
             break;
           }
@@ -157,10 +137,7 @@ export function setupWebSocket(server: Server) {
               if (lobby.round >= lobby.maxRounds) {
                 const maxScore = Math.max(...lobby.players.map((p) => p.score));
                 const winners = lobby.players.filter((p) => p.score === maxScore);
-                
-                // ADDED: Update DB when game ends naturally
                 await handleGameOverDB(lobby);
-
                 broadcastToLobby(lobbyId, {
                   type: "gameOver",
                   payload: { winners, players: lobby.players },
@@ -171,12 +148,12 @@ export function setupWebSocket(server: Server) {
                   payload: { players: lobby.players },
                 });
               }
+            } else {
+                broadcastToLobby(lobbyId, {
+                  type: "updatePlayers",
+                  payload: { players: lobby.players },
+                });
             }
-
-            broadcastToLobby(lobbyId, {
-              type: "updatePlayers",
-              payload: { players: lobby.players },
-            });
             break;
           }
 
@@ -193,7 +170,6 @@ export function setupWebSocket(server: Server) {
 
     ws.on("close", () => {
       if (!currentLobbyId || !currentPlayerId) return;
-
       const lobby = lobbies[currentLobbyId];
       if (!lobby) return;
 
@@ -205,11 +181,8 @@ export function setupWebSocket(server: Server) {
       } else {
         if (lobby.players.length > 0 && !lobby.players.some((p) => p.isHost)) {
           const newHost = lobby.players[0];
-          if (newHost) {
-            newHost.isHost = true;
-          }
+          if (newHost) { newHost.isHost = true; }
         }
-
         broadcastToLobby(currentLobbyId, {
           type: "updatePlayers",
           payload: { players: lobby.players },
@@ -228,10 +201,7 @@ async function startNextRound(lobbyId: string) {
   if (lobby.round > lobby.maxRounds) {
     const maxScore = Math.max(...lobby.players.map((p) => p.score));
     const winners = lobby.players.filter((p) => p.score === maxScore);
-    
-    // ADDED: Update DB if game ends via "Next Song" flow (safety catch)
     await handleGameOverDB(lobby);
-
     broadcastToLobby(lobbyId, {
       type: "gameOver",
       payload: { winners, players: lobby.players },
@@ -247,17 +217,8 @@ async function startNextRound(lobbyId: string) {
 
   let track;
   try {
-    const port = process.env.PORT || 8000;
-    const res = await fetch(`http://127.0.0.1:${port}/api/spotify/random-track`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ exclude: lobby.usedTrackIds }),
-    });
-
-    if (!res.ok) throw new Error("Failed to fetch track");
-    track = await res.json();
+    // FIX: CALL FUNCTION DIRECTLY (No Fetch!)
+    track = await getRandomTrack();
   } catch (err) {
     console.error("Failed to fetch track", err);
     broadcastToLobby(lobbyId, {

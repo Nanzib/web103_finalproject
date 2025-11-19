@@ -18,19 +18,19 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Define API_URL outside useEffect so we can use it in the handle function too
+  // Define API_URL explicitly to avoid proxy issues
   const API_URL = import.meta.env.PROD 
-    ? '[https://beatdle-server.onrender.com](https://beatdle-server.onrender.com)' 
+    ? 'https://beatdle-server.onrender.com' 
     : 'http://localhost:8000';
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Use the full URL here
+        // Use the full URL
         const response = await fetch(`${API_URL}/api/users/${id}`);
         
         if (!response.ok) {
-          throw new Error('Profile not found');
+          throw new Error('Profile not found (Check if DB is seeded)');
         }
         const data: UserProfile = await response.json();
         setUser(data);
@@ -42,9 +42,9 @@ const Profile: React.FC = () => {
     };
 
     fetchUserProfile();
-  }, [id, API_URL]);
+  }, [id]);
 
-  // --- HANDLER FOR SIMULATION BUTTON ---
+  // --- BUTTON HANDLER ---
   const handleSimulateWin = async () => {
     if (!user) return;
     try {
@@ -55,7 +55,7 @@ const Profile: React.FC = () => {
         if (res.ok) {
             const updatedUser = await res.json();
             setUser(updatedUser); // Update screen immediately
-            alert("Win Recorded! Database Updated. (Check Leaderboard!)");
+            alert("Win Recorded! Stats Updated.");
         } else {
             alert("Failed to update win.");
         }
@@ -64,7 +64,6 @@ const Profile: React.FC = () => {
         alert("Error connecting to server.");
     }
   };
-  // -------------------------------------
 
   if (loading) {
     return (
@@ -77,7 +76,8 @@ const Profile: React.FC = () => {
   if (error) {
     return (
         <div className="flex flex-col justify-center items-center min-h-screen bg-gray-900 text-white">
-            <p className="text-red-500">{error}</p>
+            <p className="text-red-500 text-xl mb-4">{error}</p>
+            <p className="text-gray-400">Tip: Did you run the Seed DB link?</p>
             <Link to="/" className="mt-4 text-blue-400 hover:underline">&larr; Back to Home</Link>
         </div>
     );
@@ -113,11 +113,11 @@ const Profile: React.FC = () => {
           </div>
         </div>
 
-        {/* DEMO BUTTON: Add this below the grid */}
+        {/* DEMO BUTTON FOR VIDEO */}
         <div className="mt-8 text-center">
             <button 
                 onClick={handleSimulateWin}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200 shadow-lg"
             >
                 Simulate Game Win (+1 Score)
             </button>

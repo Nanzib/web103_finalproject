@@ -3,11 +3,7 @@ import { query } from '../db.js';
 
 const router = express.Router();
 
-/**
- * @route   GET /api/users/:id
- * @desc    Fetches a single user's profile data
- * @access  Public
- */
+// GET /api/users/:id - Get User Profile
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const userId = parseInt(id, 10);
@@ -30,7 +26,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// --- NEW ROUTE: Simulate a Game Win (Satisfies "Update" Requirement) ---
+// PATCH /api/users/:id/win - Simulate a Win (For Demo)
 router.patch('/:id/win', async (req, res) => {
     const { id } = req.params;
     const userId = parseInt(id, 10);
@@ -41,8 +37,6 @@ router.patch('/:id/win', async (req, res) => {
 
     try {
         // Increment games_played and games_won
-        // Update current_streak
-        // Update max_streak only if current_streak exceeds it
         const result = await query(`
             UPDATE users 
             SET games_played = games_played + 1, 
@@ -61,6 +55,5 @@ router.patch('/:id/win', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// ---------------------------------------------------------------------
 
 export default router;
