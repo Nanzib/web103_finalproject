@@ -1,4 +1,3 @@
-
 export interface SpotifyTrack {
     id: string;
     name: string;
@@ -12,14 +11,20 @@ export interface SpotifyTrack {
     releaseDate: string;
   }
   
+// DEFINE THE URL ONCE
+const API_URL = import.meta.env.PROD 
+  ? 'https://beatdle-server.onrender.com' // Your live server
+  : 'http://localhost:8000';              // Your local computer
+
 export async function fetchTrack(id: string): Promise<SpotifyTrack> {
-    const res = await fetch(`http://localhost:8000/api/spotify/track/${id}`);
+    // Use the variable instead of the hardcoded string
+    const res = await fetch(`${API_URL}/api/spotify/track/${id}`);
     if (!res.ok) throw new Error(`Failed to fetch track: ${res.status}`);
     return await res.json();
 }
 
 export async function fetchDailySong(): Promise<SpotifyTrack> {
-    const res = await fetch(`http://localhost:8000/api/spotify/daily-song`);
+    const res = await fetch(`${API_URL}/api/spotify/daily-song`);
     if (!res.ok) throw new Error(`Failed to fetch daily song: ${res.status}`);
     return await res.json();
 }
@@ -36,9 +41,8 @@ export interface TrackSuggestion {
 }
 
 export async function searchTracks(query: string): Promise<TrackSuggestion[]> {
-    const res = await fetch(`http://localhost:8000/api/spotify/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_URL}/api/spotify/search?q=${encodeURIComponent(query)}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.results || [];
 }
-

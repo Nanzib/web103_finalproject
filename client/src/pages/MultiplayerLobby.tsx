@@ -53,7 +53,6 @@ export default function MultiplayerLobby() {
   const [gameOver, setGameOver] = useState(false);
   const [roundOver, setRoundOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  // const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(ROUND_TIME_SECONDS);
 
@@ -68,10 +67,16 @@ export default function MultiplayerLobby() {
       return;
     }
 
-    const ws = new WebSocket("ws://localhost:8080");
+    // --- DYNAMIC WEBSOCKET URL ---
+    const WS_URL = import.meta.env.PROD
+      ? 'wss://beatdle-server.onrender.com' // Production (Render)
+      : 'ws://localhost:8000';              // Local Development (Same port as Express)
+
+    const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log("Connected to Multiplayer Server via", WS_URL);
       ws.send(JSON.stringify({ type: "joinLobby", payload: { lobbyId, name, isHost } }));
     };
 
@@ -80,6 +85,10 @@ export default function MultiplayerLobby() {
       try {
         parsed = JSON.parse(event.data);
       } catch { return; }
+
+      // Handle Keep-Alive
+      if ((parsed as any).type === 'pong') return;
+
       if (!isLobbyMessage(parsed)) return;
       const msg = parsed;
 
@@ -92,7 +101,6 @@ export default function MultiplayerLobby() {
 
         case "updatePlayers":
           setPlayers(msg.payload.players);
-          // Check if my state of `won` changed, and if so, stop playing snippet
           if (audioRef.current && msg.payload.players.find(p => p.id === myIdRef.current)?.isCorrect) {
               audioRef.current.pause();
           }
@@ -106,7 +114,6 @@ export default function MultiplayerLobby() {
           setGameOver(false); 
           setTimeLeft(ROUND_TIME_SECONDS);
 
-          // Reset individual attempts on client to avoid a flicker
           setPlayers(prev =>
             prev.map(p => ({
               ...p,
@@ -132,13 +139,20 @@ export default function MultiplayerLobby() {
           setError(msg.payload.message || "Server error");
           break;
       }
-
-      ws.onerror = () => setError("WebSocket connection failed.");
-      ws.onclose = () => console.log("Disconnected from server");
-
     };
+
+    ws.onerror = () => setError("WebSocket connection failed.");
+    ws.onclose = () => console.log("Disconnected from server");
+
+    // Keep-Alive Interval (Ping every 30s to keep Render connection open)
+    const pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }));
+        }
+    }, 30000);
  
     return () => {
+      clearInterval(pingInterval);
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
           ws.close();
       }
@@ -152,7 +166,7 @@ export default function MultiplayerLobby() {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          setRoundOver(true); // End round if time runs out
+          setRoundOver(true);
           return 0;
         }
         return prev - 1;
@@ -177,13 +191,12 @@ export default function MultiplayerLobby() {
   function onGuess(selected: TrackSuggestion) {
     if (!me || !track || roundOver) return;
 
-    // Use handleGuess only to determine correctness, but do not update local state
     const correct = handleGuess(
       selected.name,
       track,
       me.guesses,
-      () => {}, // Do not update state locally in multiplayer
-      () => {}  // Do not set roundOver locally in multiplayer
+      () => {}, 
+      () => {}  
     );
 
     wsRef.current?.send(JSON.stringify({ type: "playerGuess", payload: { lobbyId, playerId: myId, correct } }));
@@ -254,23 +267,17 @@ export default function MultiplayerLobby() {
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
   
-      // Get the correct snippet duration for the waveform based on the player's current attempt
-      const currentDuration = SNIPPET_DURATIONS[me.currentAttempt] || 0;
-      const meAttempt = me.currentAttempt; // Alias for cleaner usage in waveform logic
+      const meAttempt = me.currentAttempt; 
 
       return (
         <div className="relative max-w-7xl mx-auto w-full p-4">
           
-          {/* Main Game Grid Container */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_40rem_1fr] xl:grid-cols-[1fr_40rem_1fr] gap-8">
               
-              {/* Left Spacer (1fr) */}
               <div className="hidden lg:block"></div>
   
-              {/* Center Content (Guessing Interface) */}
               <div className="w-full max-w-2xl mx-auto flex flex-col items-center mt-4 lg:mt-16 order-2 lg:order-1">
                 
-                {/* Timer/Round */}
                 <div className="w-full flex justify-between absolute top-0 lg:static mb-6 p-4 lg:p-0">
                     <div className="bg-gray-800 px-3 py-1 rounded text-white font-bold">
                         Timer: {minutes}:{seconds.toString().padStart(2, "0")}
@@ -289,11 +296,8 @@ export default function MultiplayerLobby() {
                   {isPlaying ? "⏸" : "▶️"}
                 </button>
   
-                {/* ADDED: Waveform visualization */}
                 <div className="flex gap-1 mb-8 h-16 items-end">
                   {[...Array(30)].map((_, i) => {
-                    // Check duration based on the number of attempts already made (meAttempt)
-                    // The first attempt (meAttempt=0) uses duration at index 0 (3s)
                     const durationIndex = Math.min(meAttempt, SNIPPET_DURATIONS.length - 1);
                     const currentUnlockedDuration = SNIPPET_DURATIONS[durationIndex] || 0;
                     
@@ -317,7 +321,6 @@ export default function MultiplayerLobby() {
                   <Autocomplete onSelect={onGuess} disabled={won || roundOver || me.currentAttempt >= MAX_ATTEMPTS} />
                 )}
                 
-                {/* Display Track Info after round ends */}
                 {roundOver && (
                   <div className="text-center mt-4">
                     <p className="text-xl font-bold text-green-400">Answer: {track.name}</p>
@@ -325,7 +328,6 @@ export default function MultiplayerLobby() {
                   </div>
                 )}
   
-                {/* Attempt Boxes */}
                 <div className="flex gap-3 mt-4">
                   {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => {
                     const guess = me.guesses[i];
@@ -333,7 +335,6 @@ export default function MultiplayerLobby() {
                     if (guess === "correct") boxClass = "bg-green-500 border-green-600";
                     else if (guess === "wrong") boxClass = "bg-red-500 border-red-600";
                     
-                    // Highlight current attempt box
                     if (i === me.currentAttempt && !won && !roundOver) {
                       boxClass = "border-2 border-yellow-400 animate-pulse";
                     }
@@ -346,7 +347,6 @@ export default function MultiplayerLobby() {
                   })}
                 </div>
   
-                {/* Next Song/Game Finished Button */}
                 {(roundOver && round < MAX_ROUNDS && isHost) && (
                   <button
                     onClick={nextSong}
@@ -356,7 +356,6 @@ export default function MultiplayerLobby() {
                   </button>
                 )}
   
-                {/* Game finished */}
                 {gameOver && (
                   <div className="mt-6 text-xl font-bold text-yellow-400 text-center">
                     Game Finished!
@@ -374,7 +373,6 @@ export default function MultiplayerLobby() {
                 )}
               </div>
   
-              {/* Right Scoreboard (Fixed Width) */}
               <div className="order-1 lg:order-2 hidden lg:block">
                   {renderScoreboard()}
               </div>
