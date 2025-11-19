@@ -105,12 +105,12 @@ wss.on("connection", (ws) => {
 
           player.guesses.push(correct ? "correct" : "wrong");
           player.currentAttempt = player.guesses.length;
-          
+
           if (correct) {
             player.isCorrect = true;
             // Scoring logic: 5 points for 1st attempt, 4 for 2nd, etc.
             const pointsIndex = player.currentAttempt - 1;
-            player.score += SCORE_POINTS[pointsIndex] || 0; 
+            player.score += SCORE_POINTS[pointsIndex] || 0;
           }
 
           // Check if all players finished the round
@@ -120,13 +120,13 @@ wss.on("connection", (ws) => {
               const maxScore = Math.max(...lobby.players.map((p) => p.score));
               const winners = lobby.players.filter((p) => p.score === maxScore);
               broadcastToLobby(lobbyId, {
-                type: "gameOver", 
+                type: "gameOver",
                 payload: { winners, players: lobby.players },
               });
             } else {
-               // Notify clients that the round is over based on player completion
-               broadcastToLobby(lobbyId, {
-                type: "roundOver", 
+              // Notify clients that the round is over based on player completion
+              broadcastToLobby(lobbyId, {
+                type: "roundOver",
                 payload: { players: lobby.players },
               });
             }
@@ -138,7 +138,7 @@ wss.on("connection", (ws) => {
           });
           break;
         }
-        
+
         case "nextSong": {
           // This message is sent by the host to move to the next round
           const { lobbyId } = msg.payload;
@@ -165,10 +165,12 @@ wss.on("connection", (ws) => {
     } else {
       // Reassign host if the host left
       if (lobby.players.length > 0 && !lobby.players.some(p => p.isHost)) {
-          const newHost = lobby.players[0];
+        const newHost = lobby.players[0];
+        // Add this check to satisfy TypeScript
+        if (newHost) {
           newHost.isHost = true;
+        }
       }
-      
       broadcastToLobby(currentLobbyId, {
         type: "updatePlayers",
         payload: { players: lobby.players },
@@ -186,15 +188,15 @@ async function startNextRound(lobbyId: string) {
 
   // Check for game over
   if (lobby.round > lobby.maxRounds) {
-      const maxScore = Math.max(...lobby.players.map((p) => p.score));
-      const winners = lobby.players.filter((p) => p.score === maxScore);
-      broadcastToLobby(lobbyId, {
-          type: "gameOver",
-          payload: { winners, players: lobby.players },
-      });
-      return;
+    const maxScore = Math.max(...lobby.players.map((p) => p.score));
+    const winners = lobby.players.filter((p) => p.score === maxScore);
+    broadcastToLobby(lobbyId, {
+      type: "gameOver",
+      payload: { winners, players: lobby.players },
+    });
+    return;
   }
-  
+
   // Reset players' round data
   lobby.players.forEach((p) => {
     p.currentAttempt = 0;
@@ -224,12 +226,12 @@ async function startNextRound(lobbyId: string) {
 
   // ADDED: Store the track ID
   if (track && track.id) {
-      lobby.currentTrack = track;
-      lobby.usedTrackIds.push(track.id);
+    lobby.currentTrack = track;
+    lobby.usedTrackIds.push(track.id);
   } else {
-      console.error("Fetched track is missing an ID.");
-      broadcastToLobby(lobbyId, { type: "error", payload: { message: "Fetched song data is invalid" } });
-      return;
+    console.error("Fetched track is missing an ID.");
+    broadcastToLobby(lobbyId, { type: "error", payload: { message: "Fetched song data is invalid" } });
+    return;
   }
 
   broadcastToLobby(lobbyId, {
